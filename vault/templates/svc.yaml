@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{template "fullname" . }}
+  labels:
+    heritage: {{.Release.Service | quote }}
+    release: {{.Release.Name | quote }}
+    chart: "{{.Chart.Name}}-{{.Chart.Version}}"
+    component: "{{.Release.Name}}-{{.Values.Component}}"
+  annotations:
+    "helm.sh/created": {{.Release.Time.Seconds | quote }}
+spec:
+  ports:
+    - port: {{.Values.ServicePort}}
+      name: http
+      targetPort: {{.Values.ContainerPort}}
+  selector:
+    component: "{{.Release.Name}}-{{.Values.Component}}"
+  type: {{.Values.ServiceType}}

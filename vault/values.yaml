@@ -1,0 +1,40 @@
+# Default values for vault.
+# This is a YAML-formatted file.
+# Declare name/value pairs to be passed into your templates.
+# name: value
+
+Name: vault
+Image: "pinterb/vault"
+ImageTag: "0.6.1"
+ImagePullPolicy: "Always"
+Component: "vault"
+Cpu: "200m"
+Memory: "256Mi"
+ServicePort: 8200
+ContainerPort: 8200
+# For minikube, set this to NodePort, elsewhere use LoadBalancer
+ServiceType: LoadBalancer
+
+# Log verbosity. Supported values: "trace", "debug", "info", "warn", "err"
+Logging:
+  Level: info
+
+TLS:
+  Enabled: false
+  SecretName: vault-cert
+#  CertFile: "/vault/ssl/tls.crt"
+#  KeyFile: "/vault/ssl/tls.key"
+Backend:
+# The only physical backends supported are: 'consul', 'inmem', and 'file', with default being 'inmem'.
+  Inmem:
+    Enabled: false
+  File:
+    Enabled: true
+    StorageClass: generic
+    AccessMode: ReadWriteOnce
+    Size: 8Gi
+  Consul:
+    Enabled: false
+    Path: "vault/"
+    Address: "consul:8500"
+    Scheme: http

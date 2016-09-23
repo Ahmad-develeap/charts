@@ -1,15 +1,13 @@
 name: vault
+home: https://www.vaultproject.io/
 version: 0.1.0
-description: Chart for HashiCorp Vault
+description: A HashiCorp Vault Helm chart for Kubernetes.
 keywords:
 - vault
 - secrets
 - security
-home: https://www.vaultproject.io/
 sources:
-- https://github.com/pinterb/charts
 - https://github.com/hashicorp/docker-vault
 maintainers:
 - name: Brad Pinter
   email: brad.pinter@gmail.com
-engine: gotpl

@@ -1,0 +1,141 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    heritage: {{.Release.Service | quote }}
+    release: {{.Release.Name | quote }}
+    chart: "{{.Chart.Name}}-{{.Chart.Version}}"
+    component: "{{.Release.Name}}-{{.Values.Name}}"
+  annotations:
+    "helm.sh/created": {{.Release.Time.Seconds | quote }}
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      component: "{{.Release.Name}}-{{.Values.Component}}"
+  template:
+    metadata:
+      labels:
+        heritage: {{.Release.Service | quote }}
+        release: {{.Release.Name | quote }}
+        chart: "{{.Chart.Name}}-{{.Chart.Version}}"
+        component: "{{.Release.Name}}-{{.Values.Component}}"
+      annotations:
+        pod.alpha.kubernetes.io/init-containers: '[
+              {
+                  "name": "init-config",
+                  "image": "pinterb/jinja2:0.0.16",
+                  "env": [
+                      {
+                          "name": "POD_NAMESPACE",
+                          "valueFrom": {
+                              "fieldRef": {
+                                  "apiVersion": "v1",
+                                  "fieldPath": "metadata.namespace"
+                              }
+                          }
+                      },
+                      {
+                          "name": "POD_NAME",
+                          "valueFrom": {
+                              "fieldRef": {
+                                  "apiVersion": "v1",
+                                  "fieldPath": "metadata.name"
+                              }
+                          }
+                      },
+                      {
+                          "name": "POD_IP",
+                          "valueFrom": {
+                              "fieldRef": {
+                                  "apiVersion": "v1",
+                                  "fieldPath": "status.podIP"
+                              }
+                          }
+                      },
+                      {
+                          "name": "TEMPLATE",
+                          "value": "config.json.j2"
+                      },
+                      {
+                          "name": "OUT_FILE",
+                          "value": "/out/config.json"
+                      },
+                      {
+                          "name": "PUID",
+                          "value": "0"
+                      },
+                      {
+                          "name": "PGID",
+                          "value": "0"
+                      }
+                  ],
+                  "volumeMounts": [
+                      {
+                          "name": "vault-config-template",
+                          "mountPath": "/data"
+                      },
+                      {
+                          "name": "vault-config-rendered",
+                          "mountPath": "/out",
+                          "readOnly": false
+                      }
+                  ]
+              }
+          ]'
+    spec:
+      securityContext:
+        runAsUser: 0
+      containers:
+        - name: {{ template "fullname" . }}
+          image: "{{.Values.Image}}:{{.Values.ImageTag}}"
+          imagePullPolicy: "{{.Values.ImagePullPolicy}}"
+          securityContext:
+            capabilities:
+              add:
+                - IPC_LOCK
+          args: [ "vault", "server", "-config=/vault/config", "-log-level={{.Values.Logging.Level}}" ]
+          ports:
+            - containerPort: {{.Values.ContainerPort}}
+              name: http
+          resources:
+            requests:
+              cpu: "{{.Values.Cpu}}"
+              memory: "{{.Values.Memory}}"
+          volumeMounts:
+            -
+              mountPath: /vault/config
+              name: vault-config-rendered
+              readOnly: true
+            -
+              mountPath: /vault/file
+              name: vault-file
+              readOnly: false
+            -
+              mountPath: /vault/tls
+              name: vault-tls
+              readOnly: true
+
+      volumes:
+      - name: vault-config-rendered
+        emptyDir: {}
+      - name: vault-config-template
+        configMap:
+          name: {{ template "fullname" . }}
+      - name: vault-tls
+      {{- if .Values.TLS.Enabled }}
+        secret:
+          secretName: vault-cert 
+      {{- else }}
+        emptyDir: {}
+      {{- end }}
+      - name: vault-file 
+      {{- if .Values.Backend.File.Enabled }}
+        persistentVolumeClaim:
+          claimName: {{ template "fullname" . }}-file
+      {{- else }}
+        emptyDir: {}
+      {{- end -}}

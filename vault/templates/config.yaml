@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "fullname" . }}
+data:
+  config.json.j2: |-
+    {
+      "disable_mlock": false,
+      "default_lease_ttl": "168h",
+      "max_lease_ttl": "720h",
+{{- if .Values.Backend.File.Enabled }}
+      "backend": {
+        "file":{
+          "path":"/vault/file"
+        }
+      },
+{{- end }}
+{{- if .Values.Backend.Consul.Enabled }}
+      "backend": {
+        "consul":{
+          "path":"{{.Values.Backend.Consul.Path}}",
+          "address":"{{.Values.Backend.Consul.Address}}",
+          "scheme":"{{.Values.Backend.Consul.Scheme}}"
+        }
+      },
+{{- end }}
+      "listener": {
+        "tcp":{
+          "address": "{{"{{"}} vault_pod_ip | env_override('POD_IP') {{"}}"}}:{{.Values.ContainerPort}}",
+{{- if .Values.TLS.Enabled }}
+          "tls_disable": "false",
+          "tls_cert_file": "/vault/tls/tls.crt",
+          "tls_key_file": "/vault/tls/tls.key"
+{{- else }}
+          "tls_disable": "true"
+{{- end }}
+        }
+      }
+    }

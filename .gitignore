@@ -2,5 +2,6 @@ pkg/*
 *.pyc
 bin/*
 .project
+.lego
 /.bin
 /_test/secrets/*.json
