@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{template "fullname" . }}
+  labels:
+    heritage: {{.Release.Service | quote }}
+    release: {{.Release.Name | quote }}
+    chart: "{{.Chart.Name}}-{{.Chart.Version}}"
+    component: "{{.Release.Name}}-{{.Values.Component}}"
+  annotations:
+    "helm.sh/created": {{.Release.Time.Seconds | quote }}
+spec:
+  ports:
+    - port: {{.Values.Ports.Service.Http}}
+      name: http
+      targetPort: {{.Values.Ports.Container.Http}}
+    - port: {{.Values.Ports.Service.Sync}}
+      name: sync
+      targetPort: {{.Values.Ports.Container.Sync}}
+    - port: {{.Values.Ports.Service.Discovery}}
+      name: discovery 
+      targetPort: {{.Values.Ports.Container.Discovery}}
+      protocol: UDP
+  selector:
+    component: "{{.Release.Name}}-{{.Values.Component}}"
+  type: {{.Values.ServiceType}}

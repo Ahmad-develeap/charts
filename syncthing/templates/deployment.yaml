@@ -1,0 +1,75 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    heritage: {{.Release.Service | quote }}
+    release: {{.Release.Name | quote }}
+    chart: "{{.Chart.Name}}-{{.Chart.Version}}"
+    component: "{{.Release.Name}}-{{.Values.Name}}"
+  annotations:
+    "helm.sh/created": {{.Release.Time.Seconds | quote }}
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      component: "{{.Release.Name}}-{{.Values.Component}}"
+  template:
+    metadata:
+      labels:
+        heritage: {{.Release.Service | quote }}
+        release: {{.Release.Name | quote }}
+        chart: "{{.Chart.Name}}-{{.Chart.Version}}"
+        component: "{{.Release.Name}}-{{.Values.Component}}"
+    spec:
+      securityContext:
+        runAsUser: 0
+      containers:
+        - name: {{ template "fullname" . }}
+          image: "{{.Values.Image}}:{{.Values.ImageTag}}"
+          imagePullPolicy: "{{.Values.ImagePullPolicy}}"
+          args: [ "-home", "/config", "-gui-address=https://0.0.0.0:{{.Values.Ports.Container.Http}}", "-no-browser", "-no-restart" ]
+          env:
+            - name: PUID
+              value: "0"
+            - name: PGID
+              value: "0"
+          ports:
+            - containerPort: {{.Values.Ports.Container.Http}}
+              name: http
+            - containerPort: {{.Values.Ports.Container.Sync}}
+              name: sync
+            - containerPort: {{.Values.Ports.Container.Discovery}}
+              name: discovery
+              protocol: UDP
+          resources:
+            requests:
+              cpu: "{{.Values.Cpu}}"
+              memory: "{{.Values.Memory}}"
+          volumeMounts:
+            -
+              mountPath: /config
+              name: syncthing-config
+              readOnly: false
+            -
+              mountPath: /data
+              name: syncthing-data
+              readOnly: false
+
+      volumes:
+      - name: syncthing-config
+      {{- if .Values.Persistence.Enabled }}
+        persistentVolumeClaim:
+          claimName: {{ template "fullname" . }}-config
+      {{- else }}
+        emptyDir: {}
+      {{- end }}
+      - name: syncthing-data
+      {{- if .Values.Persistence.Enabled }}
+        persistentVolumeClaim:
+          claimName: {{ template "fullname" . }}-data
+      {{- else }}
+        emptyDir: {}
+      {{- end -}}
