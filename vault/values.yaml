@@ -5,7 +5,7 @@
 
 Name: vault
 Image: "pinterb/vault"
-ImageTag: "0.6.1"
+ImageTag: "0.6.2"
 ImagePullPolicy: "Always"
 Component: "vault"
 Cpu: "200m"

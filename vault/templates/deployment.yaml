@@ -128,11 +128,11 @@ spec:
       - name: vault-tls
       {{- if .Values.TLS.Enabled }}
         secret:
-          secretName: vault-cert 
+          secretName: vault-cert
       {{- else }}
         emptyDir: {}
       {{- end }}
-      - name: vault-file 
+      - name: vault-file
       {{- if .Values.Backend.File.Enabled }}
         persistentVolumeClaim:
           claimName: {{ template "fullname" . }}-file

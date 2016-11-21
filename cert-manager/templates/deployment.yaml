@@ -1,0 +1,68 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    heritage: {{.Release.Service | quote }}
+    release: {{.Release.Name | quote }}
+    chart: "{{.Chart.Name}}-{{.Chart.Version}}"
+    component: "{{.Release.Name}}-{{.Values.Manager.Name}}"
+  annotations:
+    "helm.sh/created": {{.Release.Time.Seconds | quote }}
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      component: "{{.Release.Name}}-{{.Values.Manager.Component}}"
+  template:
+    metadata:
+      labels:
+        heritage: {{.Release.Service | quote }}
+        release: {{.Release.Name | quote }}
+        chart: "{{.Chart.Name}}-{{.Chart.Version}}"
+        component: "{{.Release.Name}}-{{.Values.Manager.Component}}"
+    spec:
+      securityContext:
+        runAsUser: 0
+      containers:
+        - name: {{.Values.Manager.Name}}
+          image: "{{.Values.Manager.Image}}:{{.Values.Manager.ImageTag}}"
+          imagePullPolicy: "{{.Values.Manager.ImagePullPolicy}}"
+          args: [ "-data-dir=/var/lib/cert-manager", "-acme-url=https://acme-v01.api.letsencrypt.org/directory"]
+          env:
+            - name: DNSIMPLE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.Acme.Provider.DNSimple.SecretName }}
+                  key: dnsimple_api_key
+            - name: DNSIMPLE_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.Acme.Provider.DNSimple.SecretName }}
+                  key: dnsimple_email
+          resources:
+            requests:
+              cpu: "{{.Values.Manager.Cpu}}"
+              memory: "{{.Values.Manager.Memory}}"
+          volumeMounts:
+            -
+              mountPath: /var/lib/cert-manager
+              name: data
+              readOnly: false
+        - name: {{.Values.Proxy.Name}}
+          image: "{{.Values.Proxy.Image}}:{{.Values.Proxy.ImageTag}}"
+          imagePullPolicy: "{{.Values.Proxy.ImagePullPolicy}}"
+          resources:
+            requests:
+              cpu: "{{.Values.Proxy.Cpu}}"
+              memory: "{{.Values.Proxy.Memory}}"
+      volumes:
+      - name: data
+      {{- if .Values.Persistence.Enabled }}
+        persistentVolumeClaim:
+          claimName: {{ template "fullname" . }}
+      {{- else }}
+        emptyDir: {}
+      {{- end -}}

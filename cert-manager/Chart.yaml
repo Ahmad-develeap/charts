@@ -1,0 +1,10 @@
+name: cert-manager
+home: https://github.com/PalmStoneGames/kube-cert-manager
+version: 0.1.0
+apiVersion: v1
+description: A Helm chart for Kubernetes
+sources:
+  - https://github.com/PalmStoneGames/kube-cert-manager
+maintainers:
+  - name: Brad Pinter 
+    email: brad.pinter@gmail.com
